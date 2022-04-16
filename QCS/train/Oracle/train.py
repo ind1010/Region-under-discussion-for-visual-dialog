@@ -46,6 +46,8 @@ if __name__ == '__main__':
     parser.add_argument("-img_feat", type=str, default="vgg", help='Select "vgg" or "res" as image features')
     parser.add_argument("-exp_name", type=str, help='Experiment Name')
     parser.add_argument("-bin_name", type=str, default='', help='Name of the trained model file')
+    parser.add_argument("-last_epoch", type=int, default=0, help='Previous epoch number')
+    parser.add_argument("-last_checkpoint", type=str, default='', help='Last model checkpoint file name')
 
     args = parser.parse_args()
 
@@ -90,21 +92,37 @@ if __name__ == '__main__':
     i2word = vocab['i2word']
     vocab_size = len(word2i)
 
+    if args.last_epoch==0:
+        # Init Model, Loss Function and Optimizer
+        model = Oracle(
+            no_words            = vocab_size,
+            no_words_feat       = embedding_config['no_words_feat'],
+            no_categories       = embedding_config['no_categories'],
+            no_category_feat    = embedding_config['no_category_feat'],
+            no_hidden_encoder   = lstm_config['no_hidden_encoder'],
+            mlp_layer_sizes     = mlp_config['layer_sizes'],
+            no_visual_feat      = inputs_config['no_visual_feat'],
+            no_crop_feat        = inputs_config['no_crop_feat'],
+            dropout             = lstm_config['dropout'],
+            inputs_config       = inputs_config,
+            scale_visual_to     = inputs_config['scale_visual_to']
+        )
 
-    # Init Model, Loss Function and Optimizer
-    model = Oracle(
-        no_words            = vocab_size,
-        no_words_feat       = embedding_config['no_words_feat'],
-        no_categories       = embedding_config['no_categories'],
-        no_category_feat    = embedding_config['no_category_feat'],
-        no_hidden_encoder   = lstm_config['no_hidden_encoder'],
-        mlp_layer_sizes     = mlp_config['layer_sizes'],
-        no_visual_feat      = inputs_config['no_visual_feat'],
-        no_crop_feat        = inputs_config['no_crop_feat'],
-        dropout             = lstm_config['dropout'],
-        inputs_config       = inputs_config,
-        scale_visual_to     = inputs_config['scale_visual_to']
-    )
+    else:
+        model = Oracle(
+            no_words            = vocab_size,
+            no_words_feat       = embedding_config['no_words_feat'],
+            no_categories       = embedding_config['no_categories'],
+            no_category_feat    = embedding_config['no_category_feat'],
+            no_hidden_encoder   = lstm_config['no_hidden_encoder'],
+            mlp_layer_sizes     = mlp_config['layer_sizes'],
+            no_visual_feat      = inputs_config['no_visual_feat'],
+            no_crop_feat        = inputs_config['no_crop_feat'],
+            dropout             = lstm_config['dropout'],
+            inputs_config       = inputs_config,
+            scale_visual_to     = inputs_config['scale_visual_to']
+        )
+        model.load_state_dict(torch.load(os.path.join(exp_config['save_models_path'], args.last_checkpoint)))
 
     loss_function = nn.NLLLoss()
     optimizer = optim.Adam(model.parameters(), optimizer_config['lr'])
@@ -158,6 +176,31 @@ if __name__ == '__main__':
         second              = dataset_config['second'],
     )
 
+    dataset_test = OracleDataset(
+        data_dir            = args.data_dir,
+        data_file           = data_paths['test_file'],
+        split               = 'test',
+        visual_feat_file    = data_paths[args.img_feat]['image_features'],
+        visual_feat_mapping_file = data_paths[exp_config['img_feat']]['img2id'],
+        visual_feat_crop_file = data_paths[args.img_feat]['crop_features'],
+        visual_feat_crop_mapping_file = data_paths[exp_config['img_feat']]['crop2id'],
+        max_src_length      = dataset_config['max_src_length'],
+        hdf5_visual_feat    = 'test_img_features',
+        hdf5_crop_feat      = 'objects_features',
+        history             = dataset_config['history'],
+        new_oracle_data     = dataset_config['new_oracle_data'],
+        successful_only     = dataset_config['successful_only'],
+        load_crops          = inputs_config['crop'],
+        # record_history      = dataset_config['record_history'],
+        # max_hlen            = dataset_config['max_hlen'],
+        # keep_yes_only       = dataset_config['keep_yes_only']
+        negative            = dataset_config['negative'],
+        supercats           = dataset_config['supercats'],
+        second              = dataset_config['second'],
+    )
+
+    args.last_epoch += 1
+
     for epoch in range(optimizer_config['no_epochs']):
 
         # Init logging variables
@@ -179,7 +222,7 @@ if __name__ == '__main__':
                 dataset=dataset,
                 batch_size=optimizer_config['batch_size'],
                 shuffle=True,
-                num_workers=0 if sys.gettrace() else 4,
+                num_workers=0 if sys.gettrace() else 2,
                 pin_memory=exp_config['use_cuda']
             )
             if split == 'train':
@@ -227,11 +270,11 @@ if __name__ == '__main__':
 
                     if i_batch == 0:
                         for name, param in model.named_parameters():
-                            writer.add_histogram("OracleParams/Oracle_" + name, param.data, epoch, bins='auto')
+                            writer.add_histogram("OracleParams/Oracle_" + name, param.data, epoch+args.last_epoch, bins='auto')
 
                         if epoch > 0 and epoch%5 == 0:
                             labels = list(OrderedDict(sorted({int(k):v for k,v in i2word.items()}.items())).values())
-                            writer.add_embedding(model.module.word_embeddings.weight.data, metadata=labels, tag='oracle word embedding', global_step=int(epoch/5))
+                            writer.add_embedding(model.module.word_embeddings.weight.data, metadata=labels, tag='oracle word embedding', global_step=int((epoch+args.last_epoch)/5))
 
                         if epoch == 0:
                             writer.add_graph(model, pred_answer)
@@ -242,25 +285,32 @@ if __name__ == '__main__':
                     writer.add_scalar("Validation/Batch Loss", loss.data[0], valid_batch_out)
                     valid_batch_out += 1
 
+                elif split == 'test' and exp_config['logging']:
+                    writer.add_scalar("Test/Batch Accurarcy", accuracy[-1], valid_batch_out)
+                    writer.add_scalar("Test/Batch Loss", loss.data[0], valid_batch_out)
+                    valid_batch_out += 1
+
             # bookkeeping
             if split == 'train':
                 train_accuracy = np.mean(accuracy)
             elif split == 'val':
                 val_accuracy = np.mean(accuracy)
+            elif split == 'test':
+                test_accuracy = np.mean(accuracy)
 
 
-        if exp_config['save_models'] and epoch == (optimizer_config['no_epochs'] -1):
+        if exp_config['save_models']:
             if not os.path.exists(exp_config['save_models_path']):
                 os.makedirs(exp_config['save_models_path'])
-            torch.save(model.state_dict(), os.path.join(exp_config['save_models_path'], ''.join(['oracle', args.bin_name, exp_config['ts'], str(epoch)])))
+            torch.save(model.state_dict(), os.path.join(exp_config['save_models_path'], ''.join(['oracle', args.bin_name, exp_config['ts'], 'e', str(epoch)])))
 
 
         print("%s, Epoch %03d, Time taken %.2f, Training-Loss %.5f, Validation-Loss %.5f, Training Accuracy %.5f, Validation Accuracy %.5f"
-        %(args.exp_name, epoch, time()-start, torch.mean(train_loss), torch.mean(val_loss), train_accuracy, val_accuracy))
+        %(args.exp_name, epoch+args.last_epoch, time()-start, torch.mean(train_loss), torch.mean(val_loss), train_accuracy, val_accuracy))
 
         if exp_config['logging']:
-            writer.add_scalar("Training/Epoch Loss", torch.mean(train_loss), epoch)
-            writer.add_scalar("Training/Epoch Accuracy", train_accuracy, epoch)
+            writer.add_scalar("Training/Epoch Loss", torch.mean(train_loss), epoch+args.last_epoch)
+            writer.add_scalar("Training/Epoch Accuracy", train_accuracy, epoch+args.last_epoch)
 
-            writer.add_scalar("Validation/Epoch Loss", torch.mean(val_loss), epoch)
-            writer.add_scalar("Validation/Epoch Accuracy", val_accuracy, epoch)
+            writer.add_scalar("Validation/Epoch Loss", torch.mean(val_loss), epoch+args.last_epoch)
+            writer.add_scalar("Validation/Epoch Accuracy", val_accuracy, epoch+args.last_epoch)
