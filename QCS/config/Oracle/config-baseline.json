@@ -39,7 +39,7 @@
     "new_oracle_data": false,
     "new_vocab": false,
     "successful_only": true,
-    "history": false,
+    "history": true,
     "record_history": true,
     "max_hlen": 4,
     "keep_yes_only": true,
@@ -56,7 +56,7 @@
     "save_models_path": "./bin/Oracle/",
     "tb_logdir": "./logs/",
     "seed": 1,
-    "splits": ["train", "val"]
+    "splits": ["train", "val", "test"]
   },
 
   "data_paths": {
@@ -64,7 +64,7 @@
     "train_file": "guesswhat.train.jsonl.gz",
     "val_file": "guesswhat.valid.jsonl.gz",
     "test_file":"guesswhat.test.jsonl.gz",
-    "vocab_file": "vocab_new.json",
+    "vocab_file": "vocab.json",
 
     "oracle_bin_file": "./bin/Oracle/oracle",
 
