@@ -4,7 +4,7 @@ You should have available three things on the root directory for this repository
 1. QCS: directory with QCS code.
 2. CMO: directory with CMO code.
 3. GWHist.csv: an annotated subset of history dependent questions.
-4. REAMDE.md: this file.
+4. README.md: this file.
 
 In order to run these experiments you need the following data and features:
 
