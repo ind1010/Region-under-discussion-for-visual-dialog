@@ -5,8 +5,8 @@ Authors: Indu Panigrahi and Raymond Liu
 Included in this repository:
 * ``QCS/`` - Contains the QCS+RuD model with our GRU implementation of the question embedding. The configurations for our ablation experiments on the input embedding are in ``configs/``. Note that we do not include the CMO model as we do not perform any experiments on it.
 * ``train.ipynb`` - Contains code to run training and evaluation scripts
-* Poster presented at the COS 484 Poster Session on 04/21/2022
-* Submitted Project Report
+* Poster presented at the [COS 484](https://princeton-nlp.github.io/cos484/) Poster Session on 04/21/2022
+* ACL 2020 camera-ready formatted project report
 
 <br>
 
