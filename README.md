@@ -8,7 +8,8 @@ Included in this repository:
 * Poster presented at the COS 484 Poster Session on 04/21/2022
 * Submitted Project Report
 
-# Region-under-discussion-for-visual-dialog
+<br>
+**Information from [repository for original paper](https://github.com/mmazuecos/Region-under-discussion-for-visual-dialog)**
 
 You should have available three things on the root directory for this repository:
 1. QCS: directory with QCS code.
