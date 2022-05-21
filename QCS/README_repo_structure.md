@@ -37,6 +37,8 @@ This folder contains JSON files which define hyperparameters, experiment configu
 ```
 This folder should have all the data files like training data files, vocabulary etc. It is required to download and place all the data from [guesswhat.ai](http://guesswhat.ai) in its original format. This file currently only contains catid2str.json and the rest of the files will be created as and when training scripts are invoked. Note: This folder is made for convenience and can be removed. In such a case appropriate path should be given in the config files.
 
+**Edit from Indu and Raymond: We have included all the data files needed except for 4 large ones that can be found [here](https://drive.google.com/drive/folders/1xvILtwBGdLiQZAmbBYSrlt4wfthjQv1Q?usp=sharing)**
+
 ```
 ---logs
 ```
