@@ -1,7 +1,7 @@
 {
 
  "lstm": {
-   "no_hidden_encoder": 512,
+   "no_hidden_encoder": 256,
    "dropout": 0.0
  },
 
@@ -22,7 +22,7 @@
  },
 
  "embeddings": {
-    "no_words_feat": 300,
+    "no_words_feat": 256,
     "no_category_feat": 512,
     "no_categories": 91
   },
@@ -30,7 +30,7 @@
   "optimizer": {
     "lr": 0.0001,
     "no_epochs": 16,
-    "batch_size": 1024
+    "batch_size": 512
   },
 
   "dataset": {
@@ -53,7 +53,7 @@
     "description": "Original Oracle (best performance).",
     "logging": false,
     "save_models": true,
-    "save_models_path": "./bin/Oracle/full/",
+    "save_models_path": "./bin/Oracle/bert/",
     "tb_logdir": "./logs/",
     "seed": 1,
     "splits": ["train", "val", "test"]

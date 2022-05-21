@@ -53,7 +53,7 @@
     "description": "Original Oracle (best performance).",
     "logging": false,
     "save_models": true,
-    "save_models_path": "./bin/Oracle/",
+    "save_models_path": "./bin/Oracle/no2nd",
     "tb_logdir": "./logs/",
     "seed": 1,
     "splits": ["train", "val", "test"]
