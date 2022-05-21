@@ -3,7 +3,7 @@
 Authors: Indu Panigrahi and Raymond Liu
 
 Included in this repository:
-* ``QCS/`` - Contains the QCS+RuD model with our version of the question embedding. Our ablation experiments are in ``configs/``. Note that we do not include the CMO model as we do not perform any experiments on it.
+* ``QCS/`` - Contains the QCS+RuD model with our version of the question embedding. The configurations for our ablation experiments on the input embedding are in ``configs/``. Note that we do not include the CMO model as we do not perform any experiments on it.
 * Poster presented at the COS 484 Poster Session on 04/21/2022
 * Submitted Project Report
 
