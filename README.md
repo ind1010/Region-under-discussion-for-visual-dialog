@@ -10,7 +10,7 @@ Included in this repository:
 
 <br>
 
-### **Information from [repository for original paper](https://github.com/mmazuecos/Region-under-discussion-for-visual-dialog)**
+### **Information from the [repository for the original paper](https://github.com/mmazuecos/Region-under-discussion-for-visual-dialog)**
 
 You should have available three things on the root directory for this repository:
 1. QCS: directory with QCS code.
