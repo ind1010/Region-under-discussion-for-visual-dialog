@@ -13,7 +13,7 @@
    "question": true,
    "obj_categories": true,
    "spatial": true,
-   "focus": false,
+   "focus": true,
    "visual": false,
    "crop": false,
    "scale_visual_to": 0,
