@@ -1,10 +1,18 @@
+**OSCAR: Occluding Spatials, Category, And Region under discussion**
+
+Authors: Indu Panigrahi and Raymond Liu
+
+Included in this repository:
+* ``QCS/`` - Contains the QCS+RuD model with our version of the question embedding. Our ablation experiments are in ``configs/``. Note that we do not include the CMO model as we do not perform any experiments on it.
+* Poster presented at the COS 484 Poster Session on 04/21/2022
+* Submitted Project Report
+
 # Region-under-discussion-for-visual-dialog
 
 You should have available three things on the root directory for this repository:
 1. QCS: directory with QCS code.
-2. CMO: directory with CMO code.
-3. GWHist.csv: an annotated subset of history dependent questions.
-4. README.md: this file.
+2. GWHist.csv: an annotated subset of history dependent questions.
+3. README.md: this file.
 
 In order to run these experiments you need the following data and features:
 
@@ -37,42 +45,6 @@ then run
 ```
 $ sh pipeline.sh
 ```
-
-### 
-
-## CMO
-
-We assume you have downloaded MS-COCO and GuessWhat?!. You'll also need to install [py-bottom-up-attention](https://github.com/airsplay/py-bottom-up-attention).
-
-#### Compute features for MSCOCO
-
-```sh
-$ python3 fasterrcnn_mscoco.py \
-    --coco-root=${COCO_ROOT} \
-    --py-bottom-up-attention-path=${PY_BOTTOM_UP_ATTENTION_PATH} \
-    --num-objects=36
-```
-
-The script will save one .npy file per image using the same tree structure as in the dataset. You can read the data as follows:
-
-```python
-import numpy as np
-fname = "fasterrcnn/mscoco_num-objects_36/val2014/COCO_val2014_000000000042.npy"
-data = np.load(fname, allow_pickle=True).item()
-```
-
-where:
-
- - data["image_size"]: tuple of ints. Image width and height (in that order)
- - data["scores"]: np.array of size (NUM_OBJECTS,). Detection scores sorted in descening order
- - data["classes"]: list of str. class names for each of the NUM_OBJECTS objects
- - data["boxes"]: np.array of size (NUM_OBJECTS, 4). Bounding boxes in the format (x, y, w, h)
- - data["features"]: np.array of size (NUM_OBJECTS, 2048). Feature vectors for each box
-
-```
-python3 -W ignore trainval.py --guesswhat-root=guesswhat_with_focus_final --max-length=32 --batch-size=32 --epochs=5 --coco-data-root=data --oracle-targets-root=resnet152 --focus-mode=none --num-threads=4 --num-workers=2 --suffix=butd-resnet152 --marker=none
-```
-were focus-mode can be either none, relative, restriction, zeros and random.
 
 ## GWHist
 
