@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
+import json
+from transformers import BertTokenizer, BertModel
 
 
 use_cuda = torch.cuda.is_available()
@@ -28,7 +30,12 @@ class Oracle(nn.Module):
         self.word_embeddings = nn.Embedding(self.no_words, self.no_words_feat)
         self.obj_categories_embedding = nn.Embedding(self.no_categories, self.no_category_feat)
 
-        self.encoder = nn.LSTM(self.no_words_feat, self.no_hidden_encoder, num_layers=1, dropout=dropout, batch_first=True)
+        #self.encoder = nn.LSTM(self.no_words_feat, self.no_hidden_encoder, num_layers=1, dropout=dropout, batch_first=True)
+        # using PyTorch GRU instead of LSTM
+        self.encoder = nn.GRU(self.no_words_feat, self.no_hidden_encoder, num_layers=1, dropout=dropout, batch_first=True)
+        
+        #self.encoder_layer = nn.TransformerEncoderLayer(d_model=256, nhead=1)
+        #self.transformer = nn.TransformerEncoder(self.encoder_layer, num_layers=2)
 
         if self.scale_visual_to != 0:
             if type(self.scale_visual_to) == int:
@@ -73,7 +80,7 @@ class Oracle(nn.Module):
 
         bs = questions.size(0)
 
-        # sort input by quesiton length
+        # sort input by question length
         if isinstance(lengths, Variable):
             lengths = lengths.data
 
@@ -90,16 +97,57 @@ class Oracle(nn.Module):
         if self.inputs_config['crop']:
             crop_features   = crop_features[ind]
 
-        # prepare LSTM input
+        # GRU question embedding
         questions_embedding  = self.word_embeddings(questions)
         packed_question = pack_padded_sequence(questions_embedding, list(lengths), batch_first = True)
-        if self.inputs_config['obj_categories']:
-            obj_categories_embeddding = self.obj_categories_embedding(obj_categories)
-
+        
         outputs, _ = self.encoder(packed_question, hx=None)
 
+        if self.inputs_config['obj_categories']:
+            obj_categories_embeddding = self.obj_categories_embedding(obj_categories)
+        
+
+        '''
+        Other experimentation with question embedding
+        # ---------------------------------------------------------------------------------------
+        # decode from vocab idxs to string
+        rawdata_path = '/content/drive/MyDrive/Region-under-discussion-for-visual-dialog/QCS/data/vocab.json'
+        with open(rawdata_path,'r') as f:
+          rawdata = json.load(f)
+
+        # str_vocab_idx = [str(int(i)) for i in questions.squeeze().tolist()]
+        rawdata = rawdata['i2word']
+
+        batched_bert_input = []
+        for q in questions:
+          bert_input = ''
+          str_vocab_idx = [str(int(i)) for i in q.tolist()]
+          for n, idx in enumerate(str_vocab_idx):
+            if idx == '0':
+              continue
+            if n==0:
+              bert_input+=rawdata[idx]
+            else:
+              bert_input+=' '
+              bert_input+=rawdata[idx]
+          batched_bert_input.append(bert_input)
+          '''
+        
+        # Pretrained BERT
+        # tokenizer = BertTokenizer.from_pretrained("./bert-small/", config='./bert-small/bert_config.json')
+        # model = BertModel.from_pretrained("./bert-small/", config='./bert-small/bert_config.json')
+        # encoded_input = tokenizer(batched_bert_input, return_tensors='pt', padding=True)
+        # output = model(**encoded_input)
+        # out = output.last_hidden_state
+        # out = torch.mean(out, dim=1)
+
+        # Transformer encoder:
+        # questions_embedding = self.word_embeddings(questions)
+        # out = torch.mean(self.transformer(questions_embedding), dim=1)
+        
+
         # get the outputs of the encoder of timepoint when the last word token has been feed to the encoder.
-        # I.e. the outputs created by the paddings will be ignored.
+        # i.e. the outputs created by the paddings will be ignored.
         output_padded = pad_packed_sequence(outputs, batch_first = True)
 
         if use_cuda:
@@ -111,6 +159,10 @@ class Oracle(nn.Module):
 
         out = torch.gather(output_padded[0], 1, I).squeeze(1)
 
+        # Naive mean question embedding
+        # questions = self.word_embeddings(questions)
+        # out = torch.squeeze(torch.mean(questions, dim=1), dim=1)
+
         if self.inputs_config['visual'] and self.scale_visual_to:
             visual_features = self.scale_visual(visual_features)
         if self.inputs_config['crop'] and self.scale_visual_to:
@@ -118,7 +170,6 @@ class Oracle(nn.Module):
 
         if self.inputs_config['question']:
             mlp_in = out
-            #print(mlp_in.dtype)
         if self.inputs_config['obj_categories']:
             mlp_in = torch.cat([mlp_in, obj_categories_embeddding],1)
         if self.inputs_config['spatial']:
